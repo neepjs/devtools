@@ -1,26 +1,21 @@
 {
-  "name": "neep",
-  "private": true,
-  "main": "dist/neep.common.js",
-  "module": "dist/neep.esm.js",
-  "scripts": {
-    "build": "npm run build:core && npm run build:web-render && npm run build:devtools",
-    "build:core": "rollup -c script/rollup.js",
-    "build:web-render": "NAME=web-render rollup -c script/rollup.js",
-    "build:devtools": "NAME=devtools rollup -c script/rollup.js",
-    "test": "rollup -c script/test.rollup.js --watch",
-    "lint": "eslint --ext .ts src",
-    "lint-fix": "eslint --fix --ext .ts src"
-  },
+  "name": "@neep/devtools",
+  "version": "0.1.0-alpha.4",
+  "main": "dist/neep.devtools.js",
+  "module": "dist/neep.devtools.mjs",
+  "browser": "dist/neep.devtools.browser.js",
+  "unpkg": "dist/neep.devtools.browser.js",
+  "jsdelivr": "dist/neep.devtools.browser.js",
   "typings": "./types",
+  "keywords": [
+    "neep",
+    "devtools"
+  ],
   "files": [
     "types.d.ts",
     "README.md",
     "LICENSE",
     "dist"
-  ],
-  "keywords": [
-    "neep"
   ],
   "author": "Fierflame",
   "license": "MIT",
@@ -32,6 +27,14 @@
     "url": "https://github.com/neepjs/neep/issues"
   },
   "homepage": "https://github.com/neepjs/neep#readme",
+  "scripts": {
+    "build": "rollup -c script/rollup.js",
+    "lint": "eslint --ext .ts src",
+    "lint-fix": "eslint --fix --ext .ts src"
+  },
+  "optionalDependencies": {
+    "@neep/core": "^0.1.0-alpha.9"
+  },
   "devDependencies": {
     "@babel/cli": "^7.5.5",
     "@babel/core": "^7.5.5",
