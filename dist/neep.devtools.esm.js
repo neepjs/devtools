@@ -1,5 +1,5 @@
 /*!
- * NeepDevtools v0.1.0-alpha.4
+ * NeepDevtools v0.1.0-alpha.5
  * (c) 2019-2020 Fierflame
  * @license MIT
  */
@@ -10,12 +10,18 @@ let createElement;
 let setHook;
 let isValue;
 let encase;
+let asValue;
+let Slot;
 function install(Neep) {
-  render = Neep.render;
-  createElement = Neep.createElement;
-  setHook = Neep.setHook;
-  isValue = Neep.isValue;
-  encase = Neep.encase;
+  ({
+    render,
+    createElement,
+    setHook,
+    isValue,
+    encase,
+    asValue,
+    Slot
+  } = Neep);
   return Neep.install;
 }
 
@@ -43,7 +49,7 @@ function* getTree(tree, parent = 0) {
   }
 
   const {
-    id,
+    id: tagId,
     tag,
     props,
     children,
@@ -54,7 +60,7 @@ function* getTree(tree, parent = 0) {
 
   if (!tag) {
     return yield {
-      id,
+      tagId,
       parent,
       type: Type.placeholder,
       tag: 'placeholder',
@@ -67,7 +73,7 @@ function* getTree(tree, parent = 0) {
 
     if (!component) {
       return yield {
-        id,
+        tagId,
         parent,
         type: Type.simple,
         tag: name,
@@ -80,11 +86,11 @@ function* getTree(tree, parent = 0) {
 
     const isNative = tag[typeSymbol] === 'native';
     return yield {
-      id,
+      tagId,
       parent,
       type: isNative ? Type.native : Type.standard,
       tag: name,
-      children: [...getTree('content' in component ? component.content : isNative ? component.nativeTree : component.tree)],
+      children: [...getTree(isNative ? component.nativeTree : component.tree)],
       props,
       key,
       label
@@ -93,13 +99,26 @@ function* getTree(tree, parent = 0) {
 
   const ltag = tag.toLowerCase();
 
+  if (ltag === 'neep:container') {
+    return yield {
+      tagId,
+      parent,
+      type: Type.container,
+      tag: ltag,
+      children: [...getTree(component ? component.content : children)],
+      props,
+      key,
+      label
+    };
+  }
+
   if (ltag === 'neep:value') {
     const treeValue = tree.value;
     return yield {
-      id,
+      tagId,
       parent,
       type: Type.special,
-      tag,
+      tag: ltag,
       children: [],
       isNative: treeValue === tree.node,
       value: treeValue,
@@ -111,10 +130,10 @@ function* getTree(tree, parent = 0) {
 
   if (ltag.substr(0, 5) === 'neep:' || ltag === 'template') {
     return yield {
-      id,
+      tagId,
       parent,
       type: Type.special,
-      tag,
+      tag: ltag,
       children: [...getTree(children)],
       props,
       key,
@@ -123,7 +142,7 @@ function* getTree(tree, parent = 0) {
   }
 
   yield {
-    id,
+    tagId,
     parent,
     type: Type.tag,
     tag,
@@ -188,47 +207,65 @@ function TextNode({
   }, "\xA0]"));
 }
 
-function getOptions({
-  value = false,
-  tag = false,
-  placeholder = false,
-  simple = false,
-  container = false,
-  template = false,
-  scopeSlot = false,
-  slotRender = false,
-  deliver = false
-}) {
-  return {
-    value,
-    tag,
-    placeholder,
-    simple,
-    container,
-    template,
-    scopeSlot,
-    slotRender,
-    deliver
-  };
+function getKey(key) {
+  if (typeof key === 'string') {
+    return ` key=${JSON.stringify(key)}`;
+  }
+
+  if (typeof key === 'number') {
+    return ` key=${key}`;
+  }
+
+  if (typeof key === 'boolean') {
+    return ` key=${key}`;
+  }
+
+  if (typeof key === 'bigint') {
+    return ` key=${key}`;
+  }
+
+  if (typeof key === 'symbol') {
+    return ` key=${String(key)}`;
+  }
+
+  if (key === null) {
+    return ` key=${key}`;
+  }
+
+  if (key !== undefined) {
+    return ` key=${String(key)}`;
+  }
 }
 
-function createTag(name, keys, id, key, labels, ...children) {
-  const opened = keys[id];
-  const hasChildren = Boolean(children.length);
-  return createElement("div", {
-    key: id,
-    style: " position: relative; min-height: 20px; font-size: 14px; line-height: 20px; "
-  }, children.length && createElement("div", {
-    style: " position: absolute; left: -20px; top: 0; width: 20px; height: 20px; text-align: center; cursor: pointer; background: #DDD;; ",
-    onclick: () => keys[id] = !opened
-  }, opened ? '-' : '+') || undefined, createElement("div", null, '<', name, typeof key === 'string' ? ` key="${key}"` : typeof key === 'number' ? ` key=${key}` : typeof key === 'boolean' ? ` key=${key}` : typeof key === 'bigint' ? ` key=${key}` : typeof key === 'symbol' ? ` key=${String(key)}` : key === null ? ` key=${key}` : key !== undefined && ` key={${String(key)}}`, hasChildren ? '>' : ' />', hasChildren && !opened && createElement("span", null, createElement("span", {
-    onclick: () => keys[id] = true,
-    style: "cursor: pointer;"
-  }, "..."), '</', name, '>'), hasChildren && labels.filter(Boolean).map(([v, color]) => createElement("span", {
+function getLabels(labels) {
+  return labels.filter(Boolean).map(([v, color]) => createElement("span", {
     style: `color: ${color || '#000'}`
-  }, v))), hasChildren && opened && createElement("div", {
+  }, v));
+}
+
+function Tag({
+  keys,
+  tagId,
+  key,
+  labels,
+  options,
+  children
+}) {
+  const opened = keys[tagId];
+  const childNodes = opened ? [...getList(children, keys, options)] : [];
+  const hasChildNodes = Boolean(opened && childNodes.length);
+  return createElement("div", {
+    key: tagId,
+    style: " position: relative; min-height: 20px; font-size: 14px; line-height: 20px; "
+  }, createElement("div", {
+    style: " position: absolute; left: -20px; top: 0; width: 20px; height: 20px; text-align: center; cursor: pointer; background: #DDD;; ",
+    onclick: () => keys[tagId] = !opened
+  }, opened ? '-' : '+'), createElement("div", null, '<', createElement(Slot, null), getKey(key), '>', !hasChildNodes && createElement("template", null, opened ? createElement("span", null) : createElement("span", {
+    onclick: () => keys[tagId] = true,
+    style: "cursor: pointer;"
+  }, "..."), '</', createElement(Slot, null), '>'), getLabels(labels)), hasChildNodes && createElement("template", null, createElement("div", {
     style: "padding-left: 20px"
-  }, children), opened && hasChildren && createElement("div", null, '</', name, '>'));
+  }, childNodes), createElement("div", null, '</', createElement(Slot, null), '>')));
 }
 
 function* getList(list, keys, options, labels = []) {
@@ -241,7 +278,7 @@ function* getList(list, keys, options, labels = []) {
   }
 
   const {
-    id,
+    tagId,
     type,
     tag,
     children,
@@ -251,29 +288,51 @@ function* getList(list, keys, options, labels = []) {
     value,
     isNative
   } = list;
+  const labelList = [label, ...labels];
 
   if (type === Type.standard || type === Type.native) {
-    return yield createTag(createElement("span", {
+    return yield createElement(Tag, {
+      keys: keys,
+      tagId: tagId,
+      key: key,
+      labels: labelList,
+      options: options,
+      children: children
+    }, createElement("span", {
       style: "font-weight: bold;"
-    }, tag), keys, id, key, [label, ...labels], ...getList(children, keys, options));
+    }, tag));
   }
 
   if (type === Type.tag) {
     if (!options.tag) {
-      return yield* getList(children, keys, options, [label, ...labels]);
+      return yield* getList(children, keys, options, labelList);
     }
 
-    return yield createTag(tag, keys, id, key, [label, ...labels], ...getList(children, keys, options));
+    return yield createElement(Tag, {
+      keys: keys,
+      tagId: tagId,
+      key: key,
+      labels: labelList,
+      options: options,
+      children: children
+    }, tag);
   }
 
   if (type === Type.simple) {
     if (!options.simple) {
-      return yield* getList(children, keys, options, [label, ...labels]);
+      return yield* getList(children, keys, options, labelList);
     }
 
-    return yield createTag(createElement("span", {
+    return yield createElement(Tag, {
+      keys: keys,
+      tagId: tagId,
+      key: key,
+      labels: labelList,
+      options: options,
+      children: children
+    }, createElement("span", {
       style: " font-style: italic; font-weight: bold; "
-    }, tag), keys, id, key, [label, ...labels], ...getList(children, keys, options));
+    }, tag));
   }
 
   if (type === Type.placeholder) {
@@ -281,60 +340,93 @@ function* getList(list, keys, options, labels = []) {
       return;
     }
 
-    return yield createTag(createElement("span", {
+    return yield createElement(Tag, {
+      keys: keys,
+      tagId: tagId,
+      key: key,
+      labels: labelList,
+      options: options,
+      children: children
+    }, createElement("span", {
       style: "font-style: italic;"
-    }, "placeholder"), keys, id, key, [label, ...labels], ...getList(children, keys, options));
+    }, "placeholder"));
   }
 
   if (type === Type.container) {
     if (!options.container) {
-      return yield* getList(children, keys, options, [label, ...labels]);
+      return yield* getList(children, keys, options, labelList);
     }
 
-    return yield createTag(createElement("span", {
+    return yield createElement(Tag, {
+      keys: keys,
+      tagId: tagId,
+      key: key,
+      labels: labelList,
+      options: options,
+      children: children
+    }, createElement("span", {
       style: "font-style: italic;"
-    }, "container"), keys, id, key, [label, ...labels], ...getList(children, keys, options));
+    }, "container"));
   }
 
-  const ltag = tag.toLowerCase();
-
-  if (ltag === 'neep:deliver') {
+  if (tag === 'neep:deliver') {
     if (!options.deliver) {
-      return yield* getList(children, keys, options, [label, ...labels]);
+      return yield* getList(children, keys, options, labelList);
     }
 
-    return yield createTag(createElement("span", {
+    return yield createElement(Tag, {
+      keys: keys,
+      tagId: tagId,
+      key: key,
+      labels: labelList,
+      options: options,
+      children: children
+    }, createElement("span", {
       style: "font-style: italic;"
-    }, "Deliver"), keys, id, key, [label, ...labels], ...getList(children, keys, options));
+    }, "Deliver"));
   }
 
-  if (ltag === 'template') {
+  if (tag === 'template') {
     if (!options.template) {
-      return yield* getList(children, keys, options, [label, ...labels]);
+      return yield* getList(children, keys, options, labelList);
     }
 
-    return yield createTag(createElement("span", {
+    return yield createElement(Tag, {
+      keys: keys,
+      tagId: tagId,
+      key: key,
+      labels: labelList,
+      options: options,
+      children: children
+    }, createElement("span", {
       style: "font-style: italic;"
-    }, "Template"), keys, id, key, [label, ...labels], ...getList(children, keys, options));
+    }, "Template"));
   }
 
-  if (ltag === 'neep:scopeslot' || ltag === 'neep:scope-slot') {
+  if (tag === 'neep:scopeslot' || tag === 'neep:scope-slot') {
     if (!options.scopeSlot) {
-      return yield* getList(children, keys, options, [label, ...labels]);
+      return yield* getList(children, keys, options, labelList);
     }
 
-    return yield createTag(createElement("span", {
+    return yield createElement(Tag, {
+      keys: keys,
+      tagId: tagId,
+      key: key,
+      labels: labelList,
+      options: options,
+      children: children
+    }, createElement("span", {
       style: "font-style: italic;"
-    }, "ScopeSlot"), keys, id, key, [label, ...labels], ...getList(children, keys, options));
+    }, "ScopeSlot"));
   }
 
-  if (ltag === 'neep:slotrender' || ltag === 'neep:slot-render') {
+  if (tag === 'neep:slotrender' || tag === 'neep:slot-render') {
     if (options.slotRender) ;
 
     return;
   }
 
-  if (ltag === 'neep:value') {
+  if (tag === 'neep:value') {
     if (!options.tag) {
       return;
     }
@@ -350,12 +442,63 @@ function* getList(list, keys, options, labels = []) {
   }
 }
 
-var App = (props => {
+var Tree = (props => {
   const keys = encase({});
   return () => createElement("div", {
     style: "padding-left: 20px;"
-  }, [...getList(props.tree, keys, getOptions(props))]);
+  }, [...getList(props.tree, keys, props.options)]);
 });
+
+function Devtools (props, {}, {
+  Slot
+}) {
+  return createElement("div", null, createElement(Slot, {
+    name: "settings"
+  }), createElement(Slot, {
+    name: "tree"
+  }));
+}
+
+function Settings (props) {
+  const options = asValue(props.options);
+  const value = options('value');
+  const tag = options('tag');
+  const placeholder = options('placeholder');
+  const simple = options('simple');
+  const container = options('container');
+  const template = options('template');
+  const scopeSlot = options('scopeSlot');
+  const slotRender = options('slotRender');
+  const deliver = options('deliver');
+  return createElement("div", null, createElement("label", null, createElement("input", {
+    type: "checkbox",
+    checked: value
+  }), "value"), createElement("label", null, createElement("input", {
+    type: "checkbox",
+    checked: tag
+  }), "tag"), createElement("label", null, createElement("input", {
+    type: "checkbox",
+    checked: placeholder
+  }), "placeholder"), createElement("label", null, createElement("input", {
+    type: "checkbox",
+    checked: simple
+  }), "simple"), createElement("label", null, createElement("input", {
+    type: "checkbox",
+    checked: container
+  }), "container"), createElement("label", null, createElement("input", {
+    type: "checkbox",
+    checked: template
+  }), "template"), createElement("label", null, createElement("input", {
+    type: "checkbox",
+    checked: scopeSlot
+  }), "scopeSlot"), createElement("label", null, createElement("input", {
+    type: "checkbox",
+    checked: slotRender
+  }), "slotRender"), createElement("label", null, createElement("input", {
+    type: "checkbox",
+    checked: deliver
+  }), "deliver"));
+}
 
 let creating = false;
 
@@ -363,44 +506,61 @@ function create() {
   creating = true;
 
   try {
-    return render();
+    return {
+      options: encase({
+        value: false,
+        tag: false,
+        placeholder: false,
+        simple: false,
+        container: false,
+        template: false,
+        scopeSlot: false,
+        slotRender: false,
+        deliver: false
+      }),
+      exposed: render()
+    };
   } finally {
     creating = false;
   }
 }
 
-const devtools = {
-  renderHook(container) {
-    if (creating) {
-      return;
-    }
-
-    let app;
-
-    const getData = () => {
-      if (!app) {
-        app = create();
-      }
-
-      const tree = [...getTree(container.content)];
-      app.$update(createElement(App, {
-        tree,
-        value: true,
-        tag: true
-      }));
-    };
-
-    setHook('drawnAll', getData, container.entity);
-    setHook('mounted', () => {
-      if (!app) {
-        app = create();
-      }
-
-      getData();
-      app.$mount();
-    }, container.entity);
+function renderHook(container) {
+  if (creating) {
+    return;
   }
 
+  let app;
+
+  const getData = () => {
+    if (!app) {
+      app = create();
+    }
+
+    const tree = [...getTree(container.content)];
+    app.exposed.$update(createElement(Devtools, null, createElement(Tree, {
+      slot: "tree",
+      tree: tree,
+      options: app.options
+    }), createElement(Settings, {
+      slot: "settings",
+      options: app.options
+    })));
+  };
+
+  setHook('drawnAll', getData, container.entity);
+  setHook('mounted', () => {
+    if (!app) {
+      app = create();
+    }
+
+    getData();
+    app.exposed.$mount();
+  }, container.entity);
+}
+
+const devtools = {
+  renderHook
 };
 
 function install$1(Neep) {

@@ -1,6 +1,6 @@
 {
   "name": "@neep/devtools",
-  "version": "0.1.0-alpha.4",
+  "version": "0.1.0-alpha.5",
   "main": "dist/neep.devtools.js",
   "module": "dist/neep.devtools.mjs",
   "browser": "dist/neep.devtools.browser.js",
