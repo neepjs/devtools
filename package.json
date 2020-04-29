@@ -21,19 +21,19 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/neepjs/neep.git"
+    "url": "git+https://github.com/neepjs/devtools.git"
   },
   "bugs": {
-    "url": "https://github.com/neepjs/neep/issues"
+    "url": "https://github.com/neepjs/devtools/issues"
   },
-  "homepage": "https://github.com/neepjs/neep#readme",
+  "homepage": "https://github.com/neepjs/devtools#readme",
   "scripts": {
     "build": "rollup -c script/rollup.js",
     "lint": "eslint --ext .ts src",
     "lint-fix": "eslint --fix --ext .ts src"
   },
   "optionalDependencies": {
-    "@neep/core": "^0.1.0-alpha.9"
+    "@neep/core": "^0.1.0-alpha.10"
   },
   "devDependencies": {
     "@babel/cli": "^7.5.5",
@@ -62,7 +62,7 @@
     "babel-eslint": "^11.0.0-beta.0",
     "eslint": "^6.2.1",
     "eslint-plugin-babel": "^5.3.0",
-    "monitorable": "0.1.0-alpha.7",
+    "monitorable": "0.1.0-beta.0",
     "rollup": "^1.20.1",
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-dts": "^1.2.1",

@@ -6,6 +6,8 @@ export {
 	setHook,
 	isValue,
 	encase,
+	asValue,
+	Slot,
 } from '@neep/core';
 
 export default function install() {

@@ -10,7 +10,7 @@ export enum Type {
 	special = 'special',
 }
 export interface VTreeNode {
-	id: number;
+	tagId: number;
 	type: Type;
 	tag: string;
 	/** 子节点 */
@@ -36,7 +36,7 @@ export function *getTree(
 		return;
 	}
 	const {
-		id,
+		id: tagId,
 		tag,
 		props,
 		children,
@@ -46,7 +46,7 @@ export function *getTree(
 	} = tree;
 	if (!tag) {
 		return yield {
-			id, parent,
+			tagId, parent,
 			type: Type.placeholder,
 			tag: 'placeholder',
 			children: [],
@@ -56,7 +56,7 @@ export function *getTree(
 		const name = tag[nameSymbol] || tag.name;
 		if (!component) {
 			return yield {
-				id, parent,
+				tagId, parent,
 				type: Type.simple,
 				tag: name,
 				children: [...getTree(children)],
@@ -67,12 +67,13 @@ export function *getTree(
 		}
 		const isNative = tag[typeSymbol] === 'native';
 		return yield {
-			id, parent,
+			tagId, parent,
 			type: isNative ? Type.native : Type.standard,
 			tag: name,
 			children: [...getTree(
-				'content' in component ? (component as ContainerEntity).content
-					: isNative ? (component as ComponentEntity).nativeTree : component.tree
+				isNative
+					? (component as ComponentEntity).nativeTree
+					: component.tree
 			)],
 			props,
 			key,
@@ -80,12 +81,27 @@ export function *getTree(
 		};
 	}
 	const ltag = tag.toLowerCase();
+	if (ltag === 'neep:container') {
+		return yield {
+			tagId, parent,
+			type: Type.container,
+			tag: ltag,
+			children: [...getTree(
+				component
+					? (component as ContainerEntity).content
+					: children
+			)],
+			props,
+			key,
+			label,
+		};
+	}
 	if (ltag === 'neep:value') {
 		const treeValue = tree.value;
 		return yield {
-			id, parent,
+			tagId, parent,
 			type: Type.special,
-			tag,
+			tag: ltag,
 			children: [],
 			isNative: treeValue === tree.node,
 			value: treeValue,
@@ -96,9 +112,9 @@ export function *getTree(
 	}
 	if (ltag.substr(0, 5) === 'neep:' || ltag === 'template') {
 		return yield {
-			id, parent,
+			tagId, parent,
 			type: Type.special,
-			tag,
+			tag: ltag,
 			children: [...getTree(children)],
 			props,
 			key,
@@ -106,7 +122,7 @@ export function *getTree(
 		};
 	}
 	yield {
-		id, parent,
+		tagId, parent,
 		type: Type.tag,
 		tag,
 		children: [...getTree(children)],
