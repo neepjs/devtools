@@ -1,5 +1,5 @@
 /*!
- * NeepDevtools v0.1.0-alpha.5
+ * NeepDevtools v0.1.0-alpha.7
  * (c) 2019-2020 Fierflame
  * @license MIT
  */
@@ -224,7 +224,6 @@
 	    return ` key=${String(key)}`;
 	  }
 	}
-
 	function getLabels(labels) {
 	  return labels.filter(Boolean).map(([v, color]) => core.createElement("span", {
 	    style: `color: ${color || '#000'}`
@@ -254,6 +253,20 @@
 	  }, "..."), '</', core.createElement(core.Slot, null), '>'), getLabels(labels)), hasChildNodes && core.createElement("template", null, core.createElement("div", {
 	    style: "padding-left: 20px"
 	  }, childNodes), core.createElement("div", null, '</', core.createElement(core.Slot, null), '>')));
+	}
+
+	function PlaceholderTag({
+	  name = 'placeholder',
+	  tagId,
+	  key,
+	  labels
+	}) {
+	  return core.createElement("div", {
+	    key: tagId,
+	    style: " position: relative; min-height: 20px; font-size: 14px; line-height: 20px; "
+	  }, '<', core.createElement("span", {
+	    style: "font-style: italic;"
+	  }, name), getKey(key), '/>', getLabels(labels));
 	}
 
 	function* getList(list, keys, options, labels = []) {
@@ -328,16 +341,11 @@
 	      return;
 	    }
 
-	    return yield core.createElement(Tag, {
-	      keys: keys,
+	    return yield core.createElement(PlaceholderTag, {
 	      tagId: tagId,
 	      key: key,
-	      labels: labelList,
-	      options: options,
-	      children: children
-	    }, core.createElement("span", {
-	      style: "font-style: italic;"
-	    }, "placeholder"));
+	      labels: labelList
+	    });
 	  }
 
 	  if (type === Type.container) {
@@ -408,12 +416,6 @@
 	    }, "ScopeSlot"));
 	  }
 
-	  if (tag === 'neep:slotrender' || tag === 'neep:slot-render') {
-	    if (options.slotRender) ;
-
-	    return;
-	  }
-
 	  if (tag === 'neep:value') {
 	    if (!options.tag) {
 	      return;
@@ -428,6 +430,19 @@
 	      value: value
 	    });
 	  }
+
+	  if (tag === 'neep:slotrender' || tag === 'neep:slot-render') {
+	    if (options.slotRender) {
+	      return yield core.createElement(PlaceholderTag, {
+	        tagId: tagId,
+	        key: key,
+	        labels: labelList,
+	        name: "SlotRender"
+	      });
+	    }
+
+	    return;
+	  }
 	}
 
 	var Tree = (props => {
@@ -437,12 +452,10 @@
 	  }, [...getList(props.tree, keys, props.options)]);
 	});
 
-	function Devtools (props, {}, {
-	  Slot
-	}) {
-	  return core.createElement("div", null, core.createElement(Slot, {
+	function Devtools (props, {}) {
+	  return core.createElement("div", null, core.createElement(core.Slot, {
 	    name: "settings"
-	  }), core.createElement(Slot, {
+	  }), core.createElement(core.Slot, {
 	    name: "tree"
 	  }));
 	}
