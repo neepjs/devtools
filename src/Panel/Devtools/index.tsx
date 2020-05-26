@@ -1,8 +1,7 @@
-import { Auxiliary } from '@neep/core';
-import { createElement } from '../../install/neep';
+import { createElement, Slot } from '../../install/neep';
 
 
-export default function (props: any, {}, { Slot }: Auxiliary) {
+export default function (props: any, {}) {
 	return <div>
 		<Slot name="settings" />
 		<Slot name="tree" />
