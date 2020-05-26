@@ -1,8 +1,9 @@
 import { NeepNode } from '@neep/core';
 import { VTreeNode, Type } from '../../tree';
-import { TextNode } from '../components/Text';
-import { createElement, encase } from '../../install/neep';
+import { TextNode } from './Text';
+import { createElement } from '../../install/neep';
 import Tag from './Tag';
+import PlaceholderTag from './PlaceholderTag';
 
 interface Options {
 	value?: boolean;
@@ -86,16 +87,11 @@ export default function *getList(
 	}
 	if (type === Type.placeholder) {
 		if (!options.placeholder) { return; }
-		return yield <Tag
-			keys={keys}
+		return yield <PlaceholderTag
 			tagId={tagId}
 			key={key}
 			labels={labelList}
-			options={options}
-			children={children}
-		>
-			<span style="font-style: italic;">placeholder</span>
-		</Tag>;
+		/>;
 	}
 	if (type === Type.container) {
 		if (!options.container) {
@@ -157,15 +153,20 @@ export default function *getList(
 			<span style="font-style: italic;">ScopeSlot</span>
 		</Tag>;
 	}
-	if (tag === 'neep:slotrender' || tag === 'neep:slot-render') {
-		if (options.slotRender) {
-
-		}
-		return;
-	}
 	if (tag === 'neep:value') {
 		if (!options.tag) { return; }
 		if (!options.value) { return; }
 		return yield <TextNode isNative={isNative} value={value} />;
+	}
+	if (tag === 'neep:slotrender' || tag === 'neep:slot-render') {
+		if (options.slotRender) {
+			return yield <PlaceholderTag
+				tagId={tagId}
+				key={key}
+				labels={labelList}
+				name="SlotRender"
+			/>;
+		}
+		return;
 	}
 }

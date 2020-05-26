@@ -2,34 +2,9 @@ import { NeepNode } from '@neep/core';
 import { VTreeNode, Type } from '../../tree';
 import { createElement, Slot } from '../../install/neep';
 import getList from './getList';
+import { getKey, getLabels } from './utils';
+import { Options } from '../../type';
 
-interface Options {
-	value?: boolean;
-	tag?: boolean;
-	placeholder?: boolean;
-	simple?: boolean;
-	container?: boolean;
-	template?: boolean;
-	scopeSlot?: boolean;
-	slotRender?: boolean;
-	deliver?: boolean;
-}
-function getKey(key: any) {
-	if (typeof key === 'string') { return ` key=${JSON.stringify(key)}`; }
-	if (typeof key === 'number') { return ` key=${key}`; }
-	if (typeof key === 'boolean') { return ` key=${key}`; }
-	if (typeof key === 'bigint') { return ` key=${key}`; }
-	if (typeof key === 'symbol') { return ` key=${String(key)}`; }
-	if (key === null) { return ` key=${key}`; }
-	if (key !== undefined) { return ` key=${String(key)}`; }
-}
-
-function getLabels(labels: ([string, string] | undefined)[]) {
-	return (labels.filter(Boolean) as [string, string][])
-		.map(([v, color]) => <span style={`color: ${color || '#000'}`}>
-			{v}
-		</span>);
-}
 interface Props {
 	keys: {[key: number]: boolean},
 	tagId: number,
