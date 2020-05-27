@@ -40,7 +40,7 @@ export default function renderHook(container: ContainerEntity) {
 	const getData = () => {
 		if (!app) { app = create(); }
 		const tree = [...getTree(container.content)];
-		app.exposed.$update(<Devtools>
+		app.exposed.$update(<Devtools options={app.options}>
 			<Tree slot="tree" tree={tree} options={app.options} />
 			<Settings slot="settings" options={app.options} />
 		</Devtools>);

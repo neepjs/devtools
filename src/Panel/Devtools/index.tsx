@@ -1,7 +1,10 @@
 import { createElement, Slot } from '../../install/neep';
+import { Options } from '../../type';
 
-
-export default function (props: any, {}) {
+interface Props {
+	options: Options;
+}
+export default function (props: Props) {
 	return <div>
 		<Slot name="settings" />
 		<Slot name="tree" />
