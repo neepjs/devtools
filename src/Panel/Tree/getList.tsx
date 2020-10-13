@@ -1,7 +1,7 @@
 import { NeepNode } from '@neep/core';
 import { VTreeNode, Type } from '../../tree';
 import { TextNode } from './Text';
-import { createElement } from '../../install/neep';
+import { createElement, isDeliver } from '../../install/neep';
 import Tag from './Tag';
 import PlaceholderTag from './PlaceholderTag';
 
@@ -108,7 +108,7 @@ export default function *getList(
 			<span style="font-style: italic;">container</span>
 		</Tag>;
 	}
-	if (tag === 'neep:deliver') {
+	if (isDeliver(tag)) {
 		if (!options.deliver) {
 			return yield* getList(children, keys, options, labelList);
 		}

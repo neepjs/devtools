@@ -8,6 +8,7 @@ export {
 	encase,
 	asValue,
 	Slot,
+	isDeliver,
 } from '@neep/core';
 
 export default function install() {
