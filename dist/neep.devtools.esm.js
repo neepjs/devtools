@@ -1,5 +1,5 @@
 /*!
- * NeepDevtools v0.1.0-alpha.7
+ * NeepDevtools v0.1.0-alpha.8
  * (c) 2019-2020 Fierflame
  * @license MIT
  */
@@ -12,6 +12,7 @@ let isValue;
 let encase;
 let asValue;
 let Slot;
+let isDeliver;
 function install(Neep) {
   ({
     render,
@@ -20,7 +21,8 @@ function install(Neep) {
     isValue,
     encase,
     asValue,
-    Slot
+    Slot,
+    isDeliver
   } = Neep);
   return Neep.install;
 }
@@ -257,7 +259,7 @@ function Tag({
     key: tagId,
     style: " position: relative; min-height: 20px; font-size: 14px; line-height: 20px; "
   }, createElement("div", {
-    style: " position: absolute; left: -20px; top: 0; width: 20px; height: 20px; text-align: center; cursor: pointer; background: #DDD;; ",
+    style: " position: absolute; left: -20px; top: 0; width: 20px; height: 20px; text-align: center; cursor: pointer; background: #DDD; ",
     onclick: () => keys[tagId] = !opened
   }, opened ? '-' : '+'), createElement("div", null, '<', createElement(Slot, null), getKey(key), '>', !hasChildNodes && createElement("template", null, opened ? createElement("span", null) : createElement("span", {
     onclick: () => keys[tagId] = true,
@@ -377,7 +379,7 @@ function* getList(list, keys, options, labels = []) {
     }, "container"));
   }
 
-  if (tag === 'neep:deliver') {
+  if (isDeliver(tag)) {
     if (!options.deliver) {
       return yield* getList(children, keys, options, labelList);
     }
@@ -464,7 +466,7 @@ var Tree = (props => {
   }, [...getList(props.tree, keys, props.options)]);
 });
 
-function Devtools (props, {}) {
+function Devtools (props) {
   return createElement("div", null, createElement(Slot, {
     name: "settings"
   }), createElement(Slot, {
@@ -551,7 +553,9 @@ function renderHook(container) {
     }
 
     const tree = [...getTree(container.content)];
-    app.exposed.$update(createElement(Devtools, null, createElement(Tree, {
+    app.exposed.$update(createElement(Devtools, {
+      options: app.options
+    }, createElement(Tree, {
       slot: "tree",
       tree: tree,
       options: app.options
@@ -582,4 +586,12 @@ function install$1(Neep) {
   });
 }
 
+
+
+var NeepDevtools = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	install: install$1
+});
+
+export default NeepDevtools;
 export { install$1 as install };

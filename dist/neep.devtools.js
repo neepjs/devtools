@@ -1,5 +1,5 @@
 /*!
- * NeepDevtools v0.1.0-alpha.7
+ * NeepDevtools v0.1.0-alpha.8
  * (c) 2019-2020 Fierflame
  * @license MIT
  */
@@ -245,7 +245,7 @@ function Tag({
     key: tagId,
     style: " position: relative; min-height: 20px; font-size: 14px; line-height: 20px; "
   }, core.createElement("div", {
-    style: " position: absolute; left: -20px; top: 0; width: 20px; height: 20px; text-align: center; cursor: pointer; background: #DDD;; ",
+    style: " position: absolute; left: -20px; top: 0; width: 20px; height: 20px; text-align: center; cursor: pointer; background: #DDD; ",
     onclick: () => keys[tagId] = !opened
   }, opened ? '-' : '+'), core.createElement("div", null, '<', core.createElement(core.Slot, null), getKey(key), '>', !hasChildNodes && core.createElement("template", null, opened ? core.createElement("span", null) : core.createElement("span", {
     onclick: () => keys[tagId] = true,
@@ -365,7 +365,7 @@ function* getList(list, keys, options, labels = []) {
     }, "container"));
   }
 
-  if (tag === 'neep:deliver') {
+  if (core.isDeliver(tag)) {
     if (!options.deliver) {
       return yield* getList(children, keys, options, labelList);
     }
@@ -452,7 +452,7 @@ var Tree = (props => {
   }, [...getList(props.tree, keys, props.options)]);
 });
 
-function Devtools (props, {}) {
+function Devtools (props) {
   return core.createElement("div", null, core.createElement(core.Slot, {
     name: "settings"
   }), core.createElement(core.Slot, {
@@ -539,7 +539,9 @@ function renderHook(container) {
     }
 
     const tree = [...getTree(container.content)];
-    app.exposed.$update(core.createElement(Devtools, null, core.createElement(Tree, {
+    app.exposed.$update(core.createElement(Devtools, {
+      options: app.options
+    }, core.createElement(Tree, {
       slot: "tree",
       tree: tree,
       options: app.options
@@ -569,4 +571,12 @@ install()({
 });
 function install$1(Neep) {}
 
+
+
+var NeepDevtools = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	install: install$1
+});
+
+exports.default = NeepDevtools;
 exports.install = install$1;
