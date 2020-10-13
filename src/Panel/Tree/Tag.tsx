@@ -35,7 +35,7 @@ export default function Tag({
 				height: 20px;
 				text-align: center;
 				cursor: pointer;
-				background: #DDD;;
+				background: #DDD;
 			"
 			onclick={() => keys[tagId] = !opened}
 		>{opened ? '-' : '+'}</div>

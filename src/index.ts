@@ -1,1 +1,3 @@
-export { default as install } from './install';
+export * from './exports';
+import * as NeepDevtools from './exports';
+export default NeepDevtools;
