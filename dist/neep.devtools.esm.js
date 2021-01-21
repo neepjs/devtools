@@ -1,31 +1,9 @@
 /*!
- * NeepDevtools v0.1.0-alpha.8
- * (c) 2019-2020 Fierflame
+ * NeepDevtools v0.1.0-alpha.9
+ * (c) 2019-2021 Fierflame
  * @license MIT
  */
-import { nameSymbol, typeSymbol } from '@neep/core';
-
-let render;
-let createElement;
-let setHook;
-let isValue;
-let encase;
-let asValue;
-let Slot;
-let isDeliver;
-function install(Neep) {
-  ({
-    render,
-    createElement,
-    setHook,
-    isValue,
-    encase,
-    asValue,
-    Slot,
-    isDeliver
-  } = Neep);
-  return Neep.install;
-}
+import Neep from '@neep/core';
 
 let Type;
 
@@ -37,176 +15,370 @@ let Type;
   Type["native"] = "native";
   Type["container"] = "container";
   Type["special"] = "special";
+  Type["deliver"] = "deliver";
 })(Type || (Type = {}));
 
-function* getTree(tree, parent = 0) {
-  var _component$exposed;
-
-  if (Array.isArray(tree)) {
-    for (const it of tree) {
-      yield* getTree(it);
-    }
-
-    return;
-  }
-
-  const {
-    id: tagId,
-    tag,
-    props,
-    children,
-    key,
-    component,
-    label = component === null || component === void 0 ? void 0 : (_component$exposed = component.exposed) === null || _component$exposed === void 0 ? void 0 : _component$exposed.$label
-  } = tree;
-
-  if (!tag) {
-    return yield {
-      tagId,
-      parent,
-      type: Type.placeholder,
-      tag: 'placeholder',
-      children: []
-    };
-  }
-
-  if (typeof tag !== 'string') {
-    const name = tag[nameSymbol] || tag.name;
-
-    if (!component) {
-      return yield {
-        tagId,
-        parent,
-        type: Type.simple,
-        tag: name,
-        children: [...getTree(children)],
-        props,
-        key,
-        label
-      };
-    }
-
-    const isNative = tag[typeSymbol] === 'native';
-    return yield {
-      tagId,
-      parent,
-      type: isNative ? Type.native : Type.standard,
-      tag: name,
-      children: [...getTree(isNative ? component.nativeTree : component.tree)],
-      props,
-      key,
-      label
-    };
-  }
-
-  const ltag = tag.toLowerCase();
-
-  if (ltag === 'neep:container') {
-    return yield {
-      tagId,
-      parent,
-      type: Type.container,
-      tag: ltag,
-      children: [...getTree(component ? component.content : children)],
-      props,
-      key,
-      label
-    };
-  }
-
-  if (ltag === 'neep:value') {
-    const treeValue = tree.value;
-    return yield {
-      tagId,
-      parent,
-      type: Type.special,
-      tag: ltag,
-      children: [],
-      isNative: treeValue === tree.node,
-      value: treeValue,
-      props,
-      key,
-      label
-    };
-  }
-
-  if (ltag.substr(0, 5) === 'neep:' || ltag === 'template') {
-    return yield {
-      tagId,
-      parent,
-      type: Type.special,
-      tag: ltag,
-      children: [...getTree(children)],
-      props,
-      key,
-      label
-    };
-  }
-
-  yield {
-    tagId,
-    parent,
-    type: Type.tag,
-    tag,
-    children: [...getTree(children)],
-    props,
-    key,
-    label
-  };
+let nameSymbol;
+let render;
+let createElementBase;
+let createRenderElement;
+let createTemplateElement;
+let setHook;
+let isValue;
+let encase;
+let asValue;
+let Slot;
+let Container;
+let Fragment;
+let Render;
+let ScopeSlot;
+let value;
+let computed;
+let getNode;
+let isDeliverComponent;
+let isNativeComponent;
+let isSimpleComponent;
+let isContainerComponent;
+let hook;
+let isProxy;
+function install(Neep) {
+  ({
+    nameSymbol,
+    render,
+    createElementBase,
+    createRenderElement,
+    createTemplateElement,
+    setHook,
+    isValue,
+    encase,
+    asValue,
+    Slot,
+    Container,
+    Fragment,
+    Render,
+    ScopeSlot,
+    value,
+    computed,
+    getNode,
+    isDeliverComponent,
+    isNativeComponent,
+    isSimpleComponent,
+    isContainerComponent,
+    hook,
+    isProxy
+  } = Neep);
+  return Neep.install;
 }
 
-function getValue(value) {
-  const type = typeof value;
+const Deliver = Neep.createDeliverComponent({
+  keys: {},
+  selected: value(-1),
+  options: {}
+});
 
-  if (type === 'function') {
-    return createElement("span", {
-      style: "font-weight: bold;"
-    }, "[Function]");
+function NodeTag({
+  proxy,
+  key,
+  switchOpen,
+  opened,
+  setSelected,
+  selected
+}) {
+  const childNodes = opened ? getChildTree(proxy) : [];
+  const hasChildNodes = Boolean(opened && childNodes.length);
+  return createElementBase('div', {
+    style: `
+			position: relative;
+			min-height: 20px;
+			font-size: 14px;
+			line-height: 20px;
+			padding-left: 20px;
+			background: ${selected ? '#CCC' : ''};
+		`
+  }, createElementBase('div', {
+    style: `
+			position: absolute;
+			left: 0;
+			top: 0;
+			width: 20px;
+			height: 20px;
+			text-align: center;
+			cursor: pointer;
+			background: #DDD;
+			`,
+    'on:click': switchOpen
+  }, opened ? '-' : '+'), createElementBase('div', {
+    'on:click': setSelected
+  }, '<', createElementBase(Slot), getKey(key), '>', !hasChildNodes && createTemplateElement(opened ? createElementBase('span') : createElementBase('span', null, '...'), '</', createElementBase(Slot), '>')), hasChildNodes && createTemplateElement(createElementBase('div', {
+    style: 'padding-left: 20px'
+  }, childNodes), createElementBase('div', {
+    'on-click': setSelected
+  }, '</', createElementBase(Slot), '>')));
+}
+
+function ValueTag({
+  proxy,
+  switchOpen,
+  opened,
+  setSelected,
+  selected
+}) {
+  const {
+    text
+  } = proxy;
+  const childNodes = opened ? typeof text === 'string' ? [text] : getChildTree(proxy) : [];
+  const hasChildNodes = Boolean(opened && childNodes.length);
+  return createElementBase('div', {
+    style: `
+				position: relative;
+				min-height: 20px;
+				font-size: 14px;
+				line-height: 20px;
+				padding-left: 20px;
+				background: ${selected ? '#CCC' : ''};
+			`
+  }, createElementBase('div', {
+    style: 'position: absolute; left: 0; top: 0; width: 20px; height: 20px; text-align: center; cursor: pointer; background: #DDD;',
+    'on:click': switchOpen
+  }, opened ? '-' : '+'), createElementBase('div', {
+    'on:click': setSelected
+  }, createElementBase('span', {
+    style: 'font-style: italic;font-weight: bold;'
+  }, '[Value]'), !hasChildNodes && createTemplateElement(opened ? createElementBase('span') : createElementBase('span', null, '...'), createElementBase('span', {
+    style: 'font-style: italic;font-weight: bold;'
+  }, '[/Value]'))), hasChildNodes && createTemplateElement(createElementBase('div', {
+    style: 'padding-left: 20px'
+  }, childNodes), createElementBase('div', {
+    'on:click': setSelected,
+    style: 'font-style: italic; font-weight: bold;'
+  }, '[/Value]')));
+}
+
+function getType(proxy) {
+  if (isProxy(proxy, 'component')) {
+    return '';
   }
 
-  if (type === 'string') {
-    return createElement("span", null, value);
+  if (isProxy(proxy, 'container')) {
+    return 'container';
   }
 
-  if (type === 'bigint' || type === 'boolean' || type === 'number' || type === 'symbol' || type === 'undefined' || value === null) {
-    return createElement("span", {
-      style: "font-style: italic;"
-    }, String(value));
-  } else if (value instanceof RegExp) {
-    return createElement("span", {
-      style: "font-weight: bold;"
-    }, String(value));
-  } else if (value instanceof Date) {
-    return createElement("span", {
-      style: "font-weight: bold;"
-    }, value.toISOString());
-  } else if (type === 'object') {
-    return createElement("span", {
-      style: "font-style: italic;"
-    }, String(value));
+  if (isProxy(proxy, 'deliver')) {
+    return 'deliver';
+  }
+
+  if (isProxy(proxy, 'element')) {
+    return 'native';
+  }
+
+  if (isProxy(proxy, 'shell')) {
+    return 'shell';
+  }
+
+  if (isProxy(proxy, 'slot')) {
+    return 'scopeSlot';
+  }
+
+  if (isSimpleComponent(proxy.tag)) {
+    return 'simple';
+  }
+
+  if (isProxy(proxy, 'group')) {
+    return 'group';
   }
 
   return null;
 }
-function TextNode({
-  isNative,
-  value
+
+const render$1 = Neep.createRenderComponent(({
+  tagId,
+  keys,
+  selected,
+  setSelected,
+  switchOpen,
+  options
+}) => {
+  const el = getNode(tagId);
+
+  if (!el) {
+    return null;
+  }
+
+  const selectedThis = selected.value === tagId;
+
+  if (!el.proxy && !el.tag) {
+    if (!options.placeholder) {
+      return null;
+    }
+
+    return createElementBase('span', {
+      'on:click': setSelected,
+      style: `font-weight: bold; background: ${selectedThis ? '#CCC' : ''};`
+    }, '[', el.tag === null ? 'Placeholder' : 'Native', ']');
+  }
+
+  const {
+    proxy,
+    tag
+  } = el;
+
+  if (tag === Render) {
+    if (!options.slotRender) {
+      return null;
+    }
+
+    return createElementBase('div', {
+      'on:click': setSelected,
+      key: tagId,
+      style: `
+					position: relative;
+					min-height: 20px;
+					font-size: 14px;
+					line-height: 20px;
+					background: ${selectedThis ? '#CCC' : ''};
+				`
+    }, '<', createElementBase('span', {
+      style: 'font-style: italic;'
+    }, 'Render'), getKey(el.key), '/>');
+  }
+
+  if (isProxy(proxy, 'value')) {
+    if (!proxy.isValue) {
+      const {
+        text
+      } = proxy;
+
+      if (typeof text !== 'string') {
+        return createTemplateElement(getChildTree(proxy));
+      }
+
+      if (!options.value) {
+        return null;
+      }
+
+      return createTemplateElement(text);
+    }
+
+    if (!options.value) {
+      if (typeof proxy.text === 'string') {
+        return null;
+      }
+
+      return createTemplateElement(getChildTree(proxy));
+    }
+
+    return createElementBase(ValueTag, {
+      opened: keys[tagId],
+      selected: selectedThis,
+      setSelected: setSelected,
+      proxy: proxy,
+      switchOpen: switchOpen
+    });
+  }
+
+  const type = getType(proxy);
+
+  if (type === null) {
+    return null;
+  }
+
+  if (type && !options[type]) {
+    return createTemplateElement(getChildTree(proxy));
+  }
+
+  let tagName = null;
+
+  switch (type) {
+    case '':
+      tagName = createElementBase('span', {
+        style: 'font-weight: bold;'
+      }, getTagName(tag));
+      break;
+
+    case 'container':
+      if (isContainerComponent(tag)) {
+        tagName = createElementBase('span', {
+          style: 'font-style: italic;font-weight: bold;'
+        }, getTagName(tag));
+      } else {
+        tagName = createElementBase('span', {
+          style: 'font-style: italic;'
+        }, 'Container');
+      }
+
+      break;
+
+    case 'deliver':
+      tagName = createElementBase('span', {
+        style: 'font-style: italic;'
+      }, 'Deliver');
+      break;
+
+    case 'scopeSlot':
+      tagName = createElementBase('span', {
+        style: 'font-style: italic;'
+      }, 'ScopeSlot');
+      break;
+
+    case 'group':
+      tagName = createElementBase('span', {
+        style: 'font-style: italic;'
+      }, 'Template');
+      break;
+
+    case 'native':
+      tagName = getTagName(tag);
+      break;
+
+    case 'shell':
+      tagName = createElementBase('span', {
+        style: 'text-decoration: underline;font-weight: bold;'
+      }, getTagName(tag));
+      break;
+
+    case 'simple':
+      tagName = createElementBase('span', {
+        style: 'text-decoration: line-through;font-weight: bold;'
+      }, getTagName(tag));
+      break;
+  }
+
+  return createElementBase(NodeTag, {
+    key: el.key,
+    opened: keys[tagId],
+    selected: selectedThis,
+    setSelected: setSelected,
+    proxy: proxy,
+    switchOpen: switchOpen
+  }, tagName);
+});
+function TreeNode({
+  tagId
+}, {
+  delivered
 }) {
-  if (isNative) {
-    return createElement("span", {
-      style: "font-weight: bold;"
-    }, "[Native]");
+  const {
+    keys,
+    selected,
+    options
+  } = delivered(Deliver);
+
+  function setSelected() {
+    selected.value = selected.value === tagId ? -1 : tagId;
   }
 
-  if (!isValue(value)) {
-    return getValue(value);
+  function switchOpen() {
+    keys[tagId] = !keys[tagId];
   }
 
-  return createElement("template", null, createElement("span", {
-    style: "font-weight: bold;"
-  }, "[Value:\xA0"), getValue(value()), createElement("span", {
-    style: "font-weight: bold;"
-  }, "\xA0]"));
+  return render$1({
+    keys,
+    selected,
+    tagId,
+    setSelected,
+    switchOpen,
+    options
+  });
 }
 
 function getKey(key) {
@@ -238,240 +410,139 @@ function getKey(key) {
     return ` key=${String(key)}`;
   }
 }
-function getLabels(labels) {
-  return labels.filter(Boolean).map(([v, color]) => createElement("span", {
-    style: `color: ${color || '#000'}`
-  }, v));
+function getChildTree(proxy) {
+  const childNodes = proxy.content.flat(Infinity).map(t => createElementBase(TreeNode, {
+    'n:key': t.id,
+    tagId: t.id
+  }));
+  return childNodes;
 }
-
-function Tag({
-  keys,
-  tagId,
-  key,
-  labels,
-  options,
-  children
-}) {
-  const opened = keys[tagId];
-  const childNodes = opened ? [...getList(children, keys, options)] : [];
-  const hasChildNodes = Boolean(opened && childNodes.length);
-  return createElement("div", {
-    key: tagId,
-    style: " position: relative; min-height: 20px; font-size: 14px; line-height: 20px; "
-  }, createElement("div", {
-    style: " position: absolute; left: -20px; top: 0; width: 20px; height: 20px; text-align: center; cursor: pointer; background: #DDD; ",
-    onclick: () => keys[tagId] = !opened
-  }, opened ? '-' : '+'), createElement("div", null, '<', createElement(Slot, null), getKey(key), '>', !hasChildNodes && createElement("template", null, opened ? createElement("span", null) : createElement("span", {
-    onclick: () => keys[tagId] = true,
-    style: "cursor: pointer;"
-  }, "..."), '</', createElement(Slot, null), '>'), getLabels(labels)), hasChildNodes && createElement("template", null, createElement("div", {
-    style: "padding-left: 20px"
-  }, childNodes), createElement("div", null, '</', createElement(Slot, null), '>')));
-}
-
-function PlaceholderTag({
-  name = 'placeholder',
-  tagId,
-  key,
-  labels
-}) {
-  return createElement("div", {
-    key: tagId,
-    style: " position: relative; min-height: 20px; font-size: 14px; line-height: 20px; "
-  }, '<', createElement("span", {
-    style: "font-style: italic;"
-  }, name), getKey(key), '/>', getLabels(labels));
-}
-
-function* getList(list, keys, options, labels = []) {
-  if (Array.isArray(list)) {
-    for (const it of list) {
-      yield* getList(it, keys, options, labels);
-    }
-
-    return;
+function getTagName(tag) {
+  if (!tag) {
+    return '';
   }
 
-  const {
-    tagId,
-    type,
-    tag,
-    children,
-    props,
-    key,
-    label,
-    value,
-    isNative
-  } = list;
-  const labelList = [label, ...labels];
-
-  if (type === Type.standard || type === Type.native) {
-    return yield createElement(Tag, {
-      keys: keys,
-      tagId: tagId,
-      key: key,
-      labels: labelList,
-      options: options,
-      children: children
-    }, createElement("span", {
-      style: "font-weight: bold;"
-    }, tag));
+  if (typeof tag === 'string') {
+    return tag;
   }
 
-  if (type === Type.tag) {
-    if (!options.tag) {
-      return yield* getList(children, keys, options, labelList);
-    }
-
-    return yield createElement(Tag, {
-      keys: keys,
-      tagId: tagId,
-      key: key,
-      labels: labelList,
-      options: options,
-      children: children
-    }, tag);
+  if (isDeliverComponent(tag)) {
+    return 'Deliver';
   }
 
-  if (type === Type.simple) {
-    if (!options.simple) {
-      return yield* getList(children, keys, options, labelList);
-    }
-
-    return yield createElement(Tag, {
-      keys: keys,
-      tagId: tagId,
-      key: key,
-      labels: labelList,
-      options: options,
-      children: children
-    }, createElement("span", {
-      style: " font-style: italic; font-weight: bold; "
-    }, tag));
-  }
-
-  if (type === Type.placeholder) {
-    if (!options.placeholder) {
-      return;
-    }
-
-    return yield createElement(PlaceholderTag, {
-      tagId: tagId,
-      key: key,
-      labels: labelList
-    });
-  }
-
-  if (type === Type.container) {
-    if (!options.container) {
-      return yield* getList(children, keys, options, labelList);
-    }
-
-    return yield createElement(Tag, {
-      keys: keys,
-      tagId: tagId,
-      key: key,
-      labels: labelList,
-      options: options,
-      children: children
-    }, createElement("span", {
-      style: "font-style: italic;"
-    }, "container"));
-  }
-
-  if (isDeliver(tag)) {
-    if (!options.deliver) {
-      return yield* getList(children, keys, options, labelList);
-    }
-
-    return yield createElement(Tag, {
-      keys: keys,
-      tagId: tagId,
-      key: key,
-      labels: labelList,
-      options: options,
-      children: children
-    }, createElement("span", {
-      style: "font-style: italic;"
-    }, "Deliver"));
-  }
-
-  if (tag === 'template') {
-    if (!options.template) {
-      return yield* getList(children, keys, options, labelList);
-    }
-
-    return yield createElement(Tag, {
-      keys: keys,
-      tagId: tagId,
-      key: key,
-      labels: labelList,
-      options: options,
-      children: children
-    }, createElement("span", {
-      style: "font-style: italic;"
-    }, "Template"));
-  }
-
-  if (tag === 'neep:scopeslot' || tag === 'neep:scope-slot') {
-    if (!options.scopeSlot) {
-      return yield* getList(children, keys, options, labelList);
-    }
-
-    return yield createElement(Tag, {
-      keys: keys,
-      tagId: tagId,
-      key: key,
-      labels: labelList,
-      options: options,
-      children: children
-    }, createElement("span", {
-      style: "font-style: italic;"
-    }, "ScopeSlot"));
-  }
-
-  if (tag === 'neep:value') {
-    if (!options.tag) {
-      return;
-    }
-
-    if (!options.value) {
-      return;
-    }
-
-    return yield createElement(TextNode, {
-      isNative: isNative,
-      value: value
-    });
-  }
-
-  if (tag === 'neep:slotrender' || tag === 'neep:slot-render') {
-    if (options.slotRender) {
-      return yield createElement(PlaceholderTag, {
-        tagId: tagId,
-        key: key,
-        labels: labelList,
-        name: "SlotRender"
-      });
-    }
-
-    return;
-  }
+  return tag[nameSymbol] || tag.name;
 }
 
 var Tree = (props => {
-  const keys = encase({});
-  return () => createElement("div", {
-    style: "padding-left: 20px;"
-  }, [...getList(props.tree, keys, props.options)]);
+  const value = {
+    keys: encase({}),
+    options: props.options,
+    selected: props.selected
+  };
+  return createRenderElement(() => createElementBase(Deliver, {
+    value: value
+  }, getChildTree(props.container)));
 });
 
-function Devtools (props) {
-  return createElement("div", null, createElement(Slot, {
-    name: "settings"
-  }), createElement(Slot, {
-    name: "tree"
-  }));
+function getKeyValue(key) {
+  if (typeof key === 'string') {
+    return JSON.stringify(key);
+  }
+
+  if (typeof key === 'number') {
+    return `${key}`;
+  }
+
+  if (typeof key === 'boolean') {
+    return `${key}`;
+  }
+
+  if (typeof key === 'bigint') {
+    return `${key}`;
+  }
+
+  if (typeof key === 'symbol') {
+    return `${String(key)}`;
+  }
+
+  if (key === null) {
+    return `${key}`;
+  }
+
+  if (key !== undefined) {
+    return `${String(key)}`;
+  }
+}
+function getValue(value) {
+  const type = typeof value;
+
+  if (type === 'function') {
+    return createElementBase('span', {
+      style: 'font-weight: bold;'
+    }, '[Function]');
+  }
+
+  if (type === 'string') {
+    return createElementBase('span', null, value);
+  }
+
+  if (type === 'bigint' || type === 'boolean' || type === 'number' || type === 'symbol' || type === 'undefined' || value === null) {
+    return createElementBase('span', {
+      style: 'font-style: italic;'
+    }, String(value));
+  } else if (value instanceof RegExp) {
+    return createElementBase('span', {
+      style: 'font-weight: bold;'
+    }, String(value));
+  } else if (value instanceof Date) {
+    return createElementBase('span', {
+      style: 'font-weight: bold;'
+    }, value.toISOString());
+  } else if (type === 'object') {
+    return createElementBase('span', {
+      style: 'font-style: italic;'
+    }, String(value));
+  }
+
+  return null;
+}
+
+function Prop ({
+  props,
+  key
+}) {
+  let p = props[key];
+  let propIsValue = false;
+
+  if (isValue(p)) {
+    propIsValue = true;
+    p = p();
+  }
+
+  return createElementBase('div', null, key, ': ', propIsValue && createElementBase('span', {
+    style: 'font-weight: bold;'
+  }, '[Value: '), getValue(p), propIsValue && createElementBase('span', {
+    style: 'font-weight: bold;'
+  }, ' ]'));
+}
+
+function Attr({
+  selected
+}) {
+  const element = getNode(selected.value);
+
+  if (!element) {
+    return createElementBase('temlpate');
+  }
+
+  const {
+    props = {}
+  } = element;
+  return createElementBase('div', null, createElementBase('div', null, 'key:', getKeyValue(element.key)), createElementBase('div', null, '属性: '), Object.keys(props).map(k => createElementBase(Prop, {
+    'n:key': k,
+    'key': k,
+    props
+  })));
 }
 
 function Settings (props) {
@@ -481,99 +552,93 @@ function Settings (props) {
   const placeholder = options('placeholder');
   const simple = options('simple');
   const container = options('container');
-  const template = options('template');
   const scopeSlot = options('scopeSlot');
   const slotRender = options('slotRender');
   const deliver = options('deliver');
-  return createElement("div", null, createElement("label", null, createElement("input", {
-    type: "checkbox",
+  const native = options('native');
+  const group = options('group');
+  const shell = options('shell');
+  return createElementBase('div', null, createElementBase('label', null, createElementBase('input', {
+    type: 'checkbox',
     checked: value
-  }), "value"), createElement("label", null, createElement("input", {
-    type: "checkbox",
+  }), 'value'), createElementBase('label', null, createElementBase('input', {
+    type: 'checkbox',
     checked: tag
-  }), "tag"), createElement("label", null, createElement("input", {
-    type: "checkbox",
+  }), 'tag'), createElementBase('label', null, createElementBase('input', {
+    type: 'checkbox',
     checked: placeholder
-  }), "placeholder"), createElement("label", null, createElement("input", {
-    type: "checkbox",
+  }), 'placeholder'), createElementBase('label', null, createElementBase('input', {
+    type: 'checkbox',
     checked: simple
-  }), "simple"), createElement("label", null, createElement("input", {
-    type: "checkbox",
+  }), 'simple'), createElementBase('label', null, createElementBase('input', {
+    type: 'checkbox',
     checked: container
-  }), "container"), createElement("label", null, createElement("input", {
-    type: "checkbox",
-    checked: template
-  }), "template"), createElement("label", null, createElement("input", {
-    type: "checkbox",
+  }), 'container'), createElementBase('label', null, createElementBase('input', {
+    type: 'checkbox',
     checked: scopeSlot
-  }), "scopeSlot"), createElement("label", null, createElement("input", {
-    type: "checkbox",
+  }), 'scopeSlot'), createElementBase('label', null, createElementBase('input', {
+    type: 'checkbox',
     checked: slotRender
-  }), "slotRender"), createElement("label", null, createElement("input", {
-    type: "checkbox",
+  }), 'slotRender'), createElementBase('label', null, createElementBase('input', {
+    type: 'checkbox',
     checked: deliver
-  }), "deliver"));
+  }), 'deliver'), createElementBase('label', null, createElementBase('input', {
+    type: 'checkbox',
+    checked: native
+  }), 'native'), createElementBase('label', null, createElementBase('input', {
+    type: 'checkbox',
+    checked: group
+  }), 'group'), createElementBase('label', null, createElementBase('input', {
+    type: 'checkbox',
+    checked: shell
+  }), 'shell'));
+}
+
+function DefaultContainer(props) {
+  return createElementBase('template', null, createElementBase(Slot, {
+    name: 'settings'
+  }), createElementBase(Slot, {
+    name: 'tree'
+  }), createElementBase(Slot, {
+    name: 'attr'
+  }));
+}
+
+let currentContainer = DefaultContainer;
+function setContainer(container) {
+  currentContainer = typeof container === 'function' ? container : DefaultContainer;
 }
 
 let creating = false;
-
-function create() {
-  creating = true;
-
-  try {
-    return {
-      options: encase({
-        value: false,
-        tag: false,
-        placeholder: false,
-        simple: false,
-        container: false,
-        template: false,
-        scopeSlot: false,
-        slotRender: false,
-        deliver: false
-      }),
-      exposed: render()
-    };
-  } finally {
-    creating = false;
-  }
-}
-
-function renderHook(container) {
+function renderHook(rootEntity, container) {
   if (creating) {
     return;
   }
 
-  let app;
+  rootEntity.setHook('mounted', () => {
+    creating = true;
 
-  const getData = () => {
-    if (!app) {
-      app = create();
+    try {
+      const options = encase({});
+      const selected = value(-1);
+      render(createElementBase(currentContainer, {
+        options
+      }, createElementBase(Tree, {
+        'n:slot': 'tree',
+        container,
+        options,
+        selected
+      }), createElementBase(Settings, {
+        'n:slot': 'settings',
+        options
+      }), createElementBase(Attr, {
+        'n:slot': 'attr',
+        selected
+      }))).mount();
+    } finally {
+      creating = false;
     }
-
-    const tree = [...getTree(container.content)];
-    app.exposed.$update(createElement(Devtools, {
-      options: app.options
-    }, createElement(Tree, {
-      slot: "tree",
-      tree: tree,
-      options: app.options
-    }), createElement(Settings, {
-      slot: "settings",
-      options: app.options
-    })));
-  };
-
-  setHook('drawnAll', getData, container.entity);
-  setHook('mounted', () => {
-    if (!app) {
-      app = create();
-    }
-
-    getData();
-    app.exposed.$mount();
-  }, container.entity);
+  });
 }
 
 const devtools = {
@@ -590,8 +655,10 @@ function install$1(Neep) {
 
 var NeepDevtools = /*#__PURE__*/Object.freeze({
 	__proto__: null,
-	install: install$1
+	install: install$1,
+	setContainer: setContainer,
+	get Type () { return Type; }
 });
 
 export default NeepDevtools;
-export { install$1 as install };
+export { Type, install$1 as install, setContainer };
