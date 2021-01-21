@@ -1,7 +1,7 @@
+import Neep from '@neep/core';
 import renderHook from './renderHook';
-import { Devtools } from '@neep/core';
 
-const devtools: Devtools = {
+const devtools: Neep.Devtools = {
 	renderHook,
 };
 

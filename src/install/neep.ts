@@ -1,14 +1,34 @@
 import { install as NeepInstall } from '@neep/core';
 
 export {
+	nameSymbol,
+
 	render,
-	createElement,
+	createElementBase,
+	createRenderElement,
+	createTemplateElement,
 	setHook,
 	isValue,
 	encase,
 	asValue,
+
 	Slot,
-	isDeliver,
+	Container,
+	Fragment,
+	Render,
+	ScopeSlot,
+
+	value,
+	computed,
+	getNode,
+
+	isDeliverComponent,
+	isNativeComponent,
+	isSimpleComponent,
+	isContainerComponent,
+	hook,
+
+	isProxy,
 } from '@neep/core';
 
 export default function install() {
