@@ -1,11 +1,15 @@
 {
   "compilerOptions": {
     "jsx": "react",
-    "jsxFactory": "createElement",
+    "jsxFactory": "Neep.createElement",
     "outDir": "./types/",
     "module": "commonjs",
     "target": "esnext",
     "sourceMap": true,
+    "baseUrl": "./",
+    "paths": {
+      "@neep/devtools": ["src"]
+    },
     "skipLibCheck": true,
     "strictNullChecks": true,
     "strict": true,
