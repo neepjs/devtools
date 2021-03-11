@@ -4,7 +4,6 @@ export let render: typeof import('@neep/core').render;
 export let createElementBase: typeof import('@neep/core').createElementBase;
 export let createRenderElement: typeof import('@neep/core').createRenderElement;
 export let createTemplateElement: typeof import('@neep/core').createTemplateElement;
-export let setHook: typeof import('@neep/core').setHook;
 export let isValue: typeof import('@neep/core').isValue;
 export let encase: typeof import('@neep/core').encase;
 export let asValue: typeof import('@neep/core').asValue;
@@ -23,7 +22,6 @@ export let isDeliverComponent: typeof import('@neep/core').isDeliverComponent;
 export let isNativeComponent: typeof import('@neep/core').isNativeComponent;
 export let isSimpleComponent: typeof import('@neep/core').isSimpleComponent;
 export let isContainerComponent: typeof import('@neep/core').isContainerComponent;
-export let hook: typeof import('@neep/core').hook;
 
 export let isProxy: typeof import('@neep/core').isProxy;
 
@@ -35,7 +33,6 @@ export default function install(Neep: typeof import('@neep/core')) {
 		createElementBase,
 		createRenderElement,
 		createTemplateElement,
-		setHook,
 		isValue,
 		encase,
 		asValue,
@@ -54,7 +51,6 @@ export default function install(Neep: typeof import('@neep/core')) {
 		isNativeComponent,
 		isSimpleComponent,
 		isContainerComponent,
-		hook,
 	
 		isProxy,
 	} = Neep);

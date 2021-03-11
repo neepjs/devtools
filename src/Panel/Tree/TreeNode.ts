@@ -143,10 +143,8 @@ const render = Neep.createRenderComponent<Item, any, any>(({
 		switchOpen: switchOpen,
 	}, tagName);
 });
-export function TreeNode(
-	{ tagId }: Props, {delivered}: Neep.ComponentContext<any, any>
-): Neep.Node {
-	const {keys, selected, options} = delivered(Deliver);
+export function TreeNode({ tagId }: Props): Neep.Node {
+	const {keys, selected, options} = Neep.withDelivered(Deliver);
 	function setSelected() {
 		selected.value = selected.value === tagId ? -1 : tagId;
 	}

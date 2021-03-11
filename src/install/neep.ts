@@ -7,7 +7,6 @@ export {
 	createElementBase,
 	createRenderElement,
 	createTemplateElement,
-	setHook,
 	isValue,
 	encase,
 	asValue,
@@ -26,7 +25,6 @@ export {
 	isNativeComponent,
 	isSimpleComponent,
 	isContainerComponent,
-	hook,
 
 	isProxy,
 } from '@neep/core';
