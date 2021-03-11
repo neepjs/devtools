@@ -1,5 +1,5 @@
 /*!
- * NeepDevtools v0.1.0-alpha.9
+ * NeepDevtools v0.1.0-alpha.10
  * (c) 2019-2021 Fierflame
  * @license MIT
  */
@@ -311,14 +311,12 @@ const render = Neep__default.createRenderComponent(({
 });
 function TreeNode({
   tagId
-}, {
-  delivered
 }) {
   const {
     keys,
     selected,
     options
-  } = delivered(Deliver);
+  } = Neep__default.withDelivered(Deliver);
 
   function setSelected() {
     selected.value = selected.value === tagId ? -1 : tagId;

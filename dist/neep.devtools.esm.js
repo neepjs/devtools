@@ -1,5 +1,5 @@
 /*!
- * NeepDevtools v0.1.0-alpha.9
+ * NeepDevtools v0.1.0-alpha.10
  * (c) 2019-2021 Fierflame
  * @license MIT
  */
@@ -23,7 +23,6 @@ let render;
 let createElementBase;
 let createRenderElement;
 let createTemplateElement;
-let setHook;
 let isValue;
 let encase;
 let asValue;
@@ -39,7 +38,6 @@ let isDeliverComponent;
 let isNativeComponent;
 let isSimpleComponent;
 let isContainerComponent;
-let hook;
 let isProxy;
 function install(Neep) {
   ({
@@ -48,7 +46,6 @@ function install(Neep) {
     createElementBase,
     createRenderElement,
     createTemplateElement,
-    setHook,
     isValue,
     encase,
     asValue,
@@ -64,7 +61,6 @@ function install(Neep) {
     isNativeComponent,
     isSimpleComponent,
     isContainerComponent,
-    hook,
     isProxy
   } = Neep);
   return Neep.install;
@@ -354,14 +350,12 @@ const render$1 = Neep.createRenderComponent(({
 });
 function TreeNode({
   tagId
-}, {
-  delivered
 }) {
   const {
     keys,
     selected,
     options
-  } = delivered(Deliver);
+  } = Neep.withDelivered(Deliver);
 
   function setSelected() {
     selected.value = selected.value === tagId ? -1 : tagId;
